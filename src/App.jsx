@@ -86,8 +86,18 @@ const reviews = [
 
 function App() {
   useEffect(() => {
-    if (!sessionStorage.getItem('_tracked')) {
+    const params = new URLSearchParams(window.location.search)
+    const initiator = params.get('initiator') || params.get('initiatior')
+    const initiatorKey = initiator ? `_tracked_initiator:${initiator}` : ''
+    const shouldTrack =
+      !sessionStorage.getItem('_tracked') ||
+      (initiatorKey && !sessionStorage.getItem(initiatorKey))
+
+    if (shouldTrack) {
       sessionStorage.setItem('_tracked', '1')
+      if (initiatorKey) {
+        sessionStorage.setItem(initiatorKey, '1')
+      }
       fetch('https://site-tracker-delta.vercel.app/api/track', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -95,6 +105,7 @@ function App() {
           site: window.location.hostname,
           page: window.location.pathname,
           referrer: document.referrer,
+          ...(initiator ? { initiator } : {}),
         }),
       }).catch(() => {})
     }
